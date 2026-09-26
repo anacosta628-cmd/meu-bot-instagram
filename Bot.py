@@ -236,10 +236,103 @@ async def botoes_handler(update, context):
     acao = query.data
 
     if acao == "publicar":
+    try:
+        await query.edit_message_text(
+            "📲 Publicando no Instagram... ⏳"
+        )
+
+        import urllib.request
+        import urllib.parse
+        import json
+
+        token = INSTAGRAM_ACCESS_TOKEN
+
+        # Descobre automaticamente a conta do Instagram
+        dados_me = urllib.parse.urlencode({
+            "fields": "id,username",
+            "access_token": token
+        })
+
+        url_me = (
+            "https://graph.instagram.com/v24.0/me?"
+            + dados_me
+        )
+
+        with urllib.request.urlopen(url_me) as resposta:
+            conta = json.loads(resposta.read().decode())
+
+        ig_user_id = conta["id"]
+
+        # URL pública da foto hospedada pelo próprio bot
+        foto_url = (
+            "https://meu-bot-instagram-7jy8.onrender.com/foto.jpg"
+        )
+
+        legenda_instagram = context.user_data.get(
+            "legenda",
+            ""
+        )
+
+        # Cria o conteúdo no Instagram
+        dados_media = urllib.parse.urlencode({
+            "image_url": foto_url,
+            "caption": legenda_instagram,
+            "access_token": token
+        }).encode()
+
+        url_media = (
+            f"https://graph.instagram.com/v24.0/"
+            f"{ig_user_id}/media"
+        )
+
+        requisicao = urllib.request.Request(
+            url_media,
+            data=dados_media,
+            method="POST"
+        )
+
+        with urllib.request.urlopen(requisicao) as resposta:
+            media = json.loads(
+                resposta.read().decode()
+            )
+
+        creation_id = media["id"]
+
+        # Publica definitivamente
+        dados_publicar = urllib.parse.urlencode({
+            "creation_id": creation_id,
+            "access_token": token
+        }).encode()
+
+        url_publicar = (
+            f"https://graph.instagram.com/v24.0/"
+            f"{ig_user_id}/media_publish"
+        )
+
+        requisicao_publicar = urllib.request.Request(
+            url_publicar,
+            data=dados_publicar,
+            method="POST"
+        )
+
+        with urllib.request.urlopen(
+            requisicao_publicar
+        ) as resposta:
+            resultado = json.loads(
+                resposta.read().decode()
+            )
 
         await query.edit_message_text(
-            "🚀 Publicação aprovada!\n\n"
-            "📲 O Instagram será conectado na próxima etapa."
+            "🎉 Publicado no Instagram com sucesso!\n\n"
+            "📲 Seu achadinho já está no ar! ❤️"
+        )
+
+    except Exception as erro:
+        print("ERRO INSTAGRAM:", erro)
+
+        await query.edit_message_text(
+            "⚠️ Não consegui publicar no Instagram.\n\n"
+            "Vou verificar a conexão e o token."
         )
 
     elif acao == "agendar":
