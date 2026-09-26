@@ -5,7 +5,12 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from google import genai
 from google.genai import types
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    LinkPreviewOptions
+)
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -166,12 +171,12 @@ Link do produto:
         context.user_data["legenda"] = legenda_final
         context.user_data["photo_file_id"] = foto.file_id
 
-        await mensagem.reply_text(
-    "✨ PRÉVIA DA PUBLICAÇÃO\n\n"
-    + legenda_final,
-    reply_markup=botoes()
-        
-        )
+        await mensagem.reply_photo(
+    photo=foto.file_id,
+    caption="✨ PRÉVIA DA PUBLICAÇÃO\n\n" + legenda_final,
+    reply_markup=botoes(),
+    link_preview_options=LinkPreviewOptions(is_disabled=True)
+)
 
         os.remove(caminho)
 
