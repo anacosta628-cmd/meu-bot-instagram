@@ -177,10 +177,16 @@ Link do produto:
     reply_markup=botoes()
 )
 
-await mensagem.reply_text(
-    "🔗 Confira aqui:\n" + link,
-    link_preview_options=LinkPreviewOptions(is_disabled=True)
-)
+        await mensagem.reply_photo(
+            photo=foto.file_id,
+            caption="✨ PRÉVIA DA PUBLICAÇÃO\n\n" + legenda,
+            reply_markup=botoes()
+        )
+
+        await mensagem.reply_text(
+            "🔗 Confira aqui:\n" + link,
+            link_preview_options=LinkPreviewOptions(is_disabled=True)
+        )
 
         os.remove(caminho)
 
@@ -192,8 +198,6 @@ await mensagem.reply_text(
             "⚠️ Não consegui gerar a legenda com a IA.\n\n"
             "Vou verificar a conexão do Gemini."
         )
-
-
 async def botoes_handler(update, context):
 
     query = update.callback_query
