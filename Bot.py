@@ -2,6 +2,9 @@ import os
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+from google import genai
+from google.genai import types
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
@@ -14,10 +17,12 @@ from telegram.ext import (
 
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 PORT = int(os.getenv("PORT", "10000"))
 
+client = genai.Client(api_key=GEMINI_API_KEY)
 
-# Servidor HTTP simples para o Render
+
 class HealthHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
@@ -66,24 +71,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         "👋 Oi! Sou seu bot de achadinhos!\n\n"
-        "📸 Envie uma foto ou vídeo do produto.\n"
+        "📸 Envie uma foto do produto.\n"
         "🔗 Coloque o link do produto na legenda.\n\n"
-        "Exemplo:\n"
-        "Foto do produto\n"
-        "https://s.shopee.com.br/seulink"
+        "A IA vai analisar a imagem e criar uma legenda para você! ✨"
     )
 
 
-async def receber_conteudo(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def receber_conteudo(update, context):
 
     mensagem = update.message
-
     texto = mensagem.caption or ""
 
-    # Procura um link
     palavras = texto.split()
 
     link = None
@@ -98,36 +96,89 @@ async def receber_conteudo(
         await mensagem.reply_text(
             "🔗 Não encontrei o link.\n\n"
             "Envie a foto com o link do produto "
-            "na legenda da foto."
+            "na legenda."
         )
 
         return
 
-    # Guarda o conteúdo
-    context.user_data["link"] = link
-
-    # Legenda inicial
-    legenda = (
-        "🛍️ ACHADINHO DO DIA!\n\n"
-        "✨ Olha só esse achadinho que encontrei!\n\n"
-        "💰 Confira o preço e todos os detalhes:\n"
-        f"🔗 {link}\n\n"
-        "#achadinhos #ofertas #shopee #comprinhas"
-    )
-
-    context.user_data["legenda"] = legenda
-
     await mensagem.reply_text(
-        "✨ PRÉVIA DA PUBLICAÇÃO\n\n"
-        + legenda,
-        reply_markup=botoes()
+        "🤖 Analisando o produto e criando sua legenda...\n"
+        "⏳ Só um instante!"
     )
 
+    try:
 
-async def botoes_handler(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+        foto = mensagem.photo[-1]
+
+        arquivo = await context.bot.get_file(
+            foto.file_id
+        )
+
+        caminho = f"/tmp/{foto.file_id}.jpg"
+
+        await arquivo.download_to_drive(caminho)
+
+        with open(caminho, "rb") as imagem:
+
+            imagem_bytes = imagem.read()
+
+        prompt = f"""
+Você é especialista em criar conteúdo para Instagram de achadinhos e afiliados.
+
+Analise a imagem do produto e crie uma legenda curta, chamativa e natural para Instagram.
+
+REGRAS:
+- Não invente preço.
+- Não invente desconto.
+- Não invente características que não aparecem na imagem.
+- Use emojis.
+- Comece com uma chamada atraente.
+- Incentive a pessoa a conferir o produto pelo link.
+- Termine com hashtags relevantes.
+- Não diga que você é uma IA.
+
+Link do produto:
+{link}
+"""
+
+        resposta = client.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=[
+                types.Part.from_bytes(
+                    data=imagem_bytes,
+                    mime_type="image/jpeg"
+                ),
+                prompt
+            ]
+        )
+
+        legenda = resposta.text.strip()
+
+        legenda_final = f"{legenda}\n\n🔗 Confira aqui:\n{link}"
+
+        context.user_data["link"] = link
+        context.user_data["legenda"] = legenda_final
+        context.user_data["photo_file_id"] = foto.file_id
+
+        await mensagem.reply_text(
+            "✨ PRÉVIA DA PUBLICAÇÃO\n\n"
+            + legenda_final,
+            reply_markup=botoes()
+        )
+
+        os.remove(caminho)
+
+    except Exception as erro:
+
+        print("ERRO GEMINI:", erro)
+
+        await mensagem.reply_text(
+            "⚠️ Não consegui gerar a legenda com a IA.\n\n"
+            "Vou verificar a conexão do Gemini."
+        )
+
+
+async def botoes_handler(update, context):
 
     query = update.callback_query
 
@@ -147,7 +198,7 @@ async def botoes_handler(
         await query.edit_message_text(
             "📅 Agendamento selecionado!\n\n"
             "Na próxima etapa vamos permitir "
-            "que você escolha data e horário."
+            "que você escolha o dia e o horário."
         )
 
     elif acao == "editar":
@@ -174,7 +225,11 @@ def main():
             "TELEGRAM_BOT_TOKEN não foi configurado."
         )
 
-    # Inicia servidor para o Render
+    if not GEMINI_API_KEY:
+        raise RuntimeError(
+            "GEMINI_API_KEY não foi configurada."
+        )
+
     thread = threading.Thread(
         target=iniciar_servidor,
         daemon=True
@@ -182,7 +237,6 @@ def main():
 
     thread.start()
 
-    # Cria o bot
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(
