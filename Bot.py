@@ -219,8 +219,6 @@ Produto/link:
             link_preview_options=LinkPreviewOptions(is_disabled=True)
         )
 
-        os.remove(caminho)
-
     except Exception as erro:
 
         print("ERRO GEMINI:", erro)
