@@ -173,8 +173,12 @@ Link do produto:
 
         await mensagem.reply_photo(
     photo=foto.file_id,
-    caption="✨ PRÉVIA DA PUBLICAÇÃO\n\n" + legenda_final,
-    reply_markup=botoes(),
+    caption="✨ PRÉVIA DA PUBLICAÇÃO\n\n" + legenda,
+    reply_markup=botoes()
+)
+
+await mensagem.reply_text(
+    "🔗 Confira aqui:\n" + link,
     link_preview_options=LinkPreviewOptions(is_disabled=True)
 )
 
