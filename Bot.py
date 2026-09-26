@@ -142,7 +142,7 @@ Link do produto:
 """
 
         resposta = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-3.5-flash-lite",
             contents=[
                 types.Part.from_bytes(
                     data=imagem_bytes,
