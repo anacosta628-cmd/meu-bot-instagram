@@ -17,7 +17,10 @@ from telegram.ext import (
 
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(
+    api_key=GEMINI_API_KEY,
+    http_options=types.HttpOptions(timeout=120000)
+)
 PORT = int(os.getenv("PORT", "10000"))
 
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -142,8 +145,8 @@ Link do produto:
 """
 
         resposta = client.models.generate_content(
-            model="gemini-3.5-flash-lite",
-            contents=[
+    model="gemini-3.5-flash-lite",
+    contents=[
                 types.Part.from_bytes(
                     data=imagem_bytes,
                     mime_type="image/jpeg"
