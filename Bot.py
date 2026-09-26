@@ -164,9 +164,10 @@ Link do produto:
         context.user_data["photo_file_id"] = foto.file_id
 
         await mensagem.reply_text(
-            "✨ PRÉVIA DA PUBLICAÇÃO\n\n"
-            + legenda_final,
-            reply_markup=botoes()
+    "✨ PRÉVIA DA PUBLICAÇÃO\n\n"
+    + legenda_final,
+    reply_markup=botoes()
+        
         )
 
         os.remove(caminho)
