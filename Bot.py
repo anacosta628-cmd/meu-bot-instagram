@@ -36,15 +36,19 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 class HealthHandler(BaseHTTPRequestHandler):
 
-    def do_GET(self):
+def do_GET(self):
+    if self.path == "/foto.jpg" and os.path.exists("/tmp/foto_file_id.jpg"):
+        self.send_response(200)
+        self.send_header("Content-Type", "image/jpeg")
+        self.end_headers()
+
+        with open("/tmp/foto_file_id.jpg", "rb") as arquivo:
+            self.wfile.write(arquivo.read())
+    else:
         self.send_response(200)
         self.send_header("Content-Type", "text/plain")
         self.end_headers()
         self.wfile.write(b"Bot funcionando!")
-
-    def log_message(self, format, *args):
-        return
-
 
 def iniciar_servidor():
     servidor = HTTPServer(("0.0.0.0", PORT), HealthHandler)
