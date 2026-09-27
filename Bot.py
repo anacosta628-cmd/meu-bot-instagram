@@ -263,9 +263,9 @@ async def botoes_handler(update, context):
     acao = query.data
 
     if acao == "publicar":
-        try:
-            await query.edit_message_text(
-                "📲 Publicando no Instagram... ⏳"
+    try:
+        await query.edit_message_text(
+            "📲 Publicando no Instagram... ⏳"
             )
 
             import urllib.request
