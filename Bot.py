@@ -235,7 +235,7 @@ Produto/link:
     acao = query.data
 
     if acao == "publicar":
-    try:
+        try:
         await query.edit_message_text(
             "📲 Publicando no Instagram... ⏳"
             )
