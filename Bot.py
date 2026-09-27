@@ -236,15 +236,18 @@ Produto/link:
 
     if acao == "publicar":
         try:
-        await query.edit_message_text(
-            "📲 Publicando no Instagram... ⏳"
+        await
+    query.edit_message_text(
+            "📲 Publicando no
+    Instagram... ⏳"
             )
 
             import urllib.request
             import urllib.parse
             import json
 
-            token = INSTAGRAM_ACCESS_TOKEN
+            token = 
+    INSTAGRAM_ACCESS_TOKEN
 
             dados_me = urllib.parse.urlencode({
                 "fields": "id,username",
