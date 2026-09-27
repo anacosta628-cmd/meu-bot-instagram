@@ -227,8 +227,9 @@ Produto/link:
             "⚠️ Não consegui gerar a legenda com a IA.\n\n"
             "Vou verificar a conexão do Gemini."
         )
-            async def botoes_handler(update, context):
-    query = update.callback_query
+    async def botoes_handler(update,
+    context):
+        query = update.callback_query
     await query.answer()
 
     acao = query.data
