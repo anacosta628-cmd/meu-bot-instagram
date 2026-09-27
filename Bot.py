@@ -255,88 +255,114 @@ async def botoes_handler(update, context):
 
         url_me = (
             "https://graph.instagram.com/v24.0/me?"
-            + dados_me
-        )
+            + dados_me 
+            async def botoes_handler(update, context):
+    query = update.callback_query
+    await query.answer()
 
-        with urllib.request.urlopen(url_me) as resposta:
-            conta = json.loads(resposta.read().decode())
+    acao = query.data
 
-        ig_user_id = conta["id"]
-
-        # URL pública da foto hospedada pelo próprio bot
-        foto_url = (
-            "https://meu-bot-instagram-7jy8.onrender.com/foto.jpg"
-        )
-
-        legenda_instagram = context.user_data.get(
-            "legenda",
-            ""
-        )
-
-        # Cria o conteúdo no Instagram
-        dados_media = urllib.parse.urlencode({
-            "image_url": foto_url,
-            "caption": legenda_instagram,
-            "access_token": token
-        }).encode()
-
-        url_media = (
-            f"https://graph.instagram.com/v24.0/"
-            f"{ig_user_id}/media"
-        )
-
-        requisicao = urllib.request.Request(
-            url_media,
-            data=dados_media,
-            method="POST"
-        )
-
-        with urllib.request.urlopen(requisicao) as resposta:
-            media = json.loads(
-                resposta.read().decode()
+    if acao == "publicar":
+        try:
+            await query.edit_message_text(
+                "📲 Publicando no Instagram... ⏳"
             )
 
-        creation_id = media["id"]
+            import urllib.request
+            import urllib.parse
+            import json
 
-        # Publica definitivamente
-        dados_publicar = urllib.parse.urlencode({
-            "creation_id": creation_id,
-            "access_token": token
-        }).encode()
+            token = INSTAGRAM_ACCESS_TOKEN
 
-        url_publicar = (
-            f"https://graph.instagram.com/v24.0/"
-            f"{ig_user_id}/media_publish"
-        )
+            dados_me = urllib.parse.urlencode({
+                "fields": "id,username",
+                "access_token": token
+            })
 
-        requisicao_publicar = urllib.request.Request(
-            url_publicar,
-            data=dados_publicar,
-            method="POST"
-        )
-
-        with urllib.request.urlopen(
-            requisicao_publicar
-        ) as resposta:
-            resultado = json.loads(
-                resposta.read().decode()
+            url_me = (
+                "https://graph.instagram.com/v24.0/me?"
+                + dados_me
             )
 
-        await query.edit_message_text(
-            "🎉 Publicado no Instagram com sucesso!\n\n"
-            "📲 Seu achadinho já está no ar! ❤️"
-        )
+            with urllib.request.urlopen(url_me) as resposta:
+                conta = json.loads(
+                    resposta.read().decode()
+                )
 
-    except Exception as erro:
-        print("ERRO INSTAGRAM:", erro)
+            ig_user_id = conta["id"]
 
-        await query.edit_message_text(
-            "⚠️ Não consegui publicar no Instagram.\n\n"
-            "Vou verificar a conexão e o token."
-        )
+            foto_url = (
+                "https://meu-bot-instagram-7jy8.onrender.com/foto.jpg"
+            )
+
+            legenda_instagram = context.user_data.get(
+                "legenda",
+                ""
+            )
+
+            dados_media = urllib.parse.urlencode({
+                "image_url": foto_url,
+                "caption": legenda_instagram,
+                "access_token": token
+            }).encode()
+
+            url_media = (
+                f"https://graph.instagram.com/v24.0/"
+                f"{ig_user_id}/media"
+            )
+
+            requisicao = urllib.request.Request(
+                url_media,
+                data=dados_media,
+                method="POST"
+            )
+
+            with urllib.request.urlopen(
+                requisicao
+            ) as resposta:
+                media = json.loads(
+                    resposta.read().decode()
+                )
+
+            creation_id = media["id"]
+
+            dados_publicar = urllib.parse.urlencode({
+                "creation_id": creation_id,
+                "access_token": token
+            }).encode()
+
+            url_publicar = (
+                f"https://graph.instagram.com/v24.0/"
+                f"{ig_user_id}/media_publish"
+            )
+
+            requisicao_publicar = urllib.request.Request(
+                url_publicar,
+                data=dados_publicar,
+                method="POST"
+            )
+
+            with urllib.request.urlopen(
+                requisicao_publicar
+            ) as resposta:
+                resultado = json.loads(
+                    resposta.read().decode()
+                )
+
+            await query.edit_message_text(
+                "🎉 Publicado no Instagram com sucesso!\n\n"
+                "📲 Seu achadinho já está no ar! ❤️"
+            )
+
+        except Exception as erro:
+            print("ERRO INSTAGRAM:", erro)
+
+            await query.edit_message_text(
+                "⚠️ Não consegui publicar no Instagram.\n\n"
+                "Vou verificar a conexão e o token."
+            )
 
     elif acao == "agendar":
-
         await query.edit_message_text(
             "📅 Agendamento selecionado!\n\n"
             "Na próxima etapa vamos permitir "
@@ -344,7 +370,6 @@ async def botoes_handler(update, context):
         )
 
     elif acao == "editar":
-
         await query.edit_message_text(
             "✏️ Edição selecionada!\n\n"
             "Na próxima versão você poderá "
@@ -352,15 +377,11 @@ async def botoes_handler(update, context):
         )
 
     elif acao == "cancelar":
-
         context.user_data.clear()
 
         await query.edit_message_text(
             "❌ Publicação cancelada."
         )
-
-
-def main():
 
     if not TOKEN:
         raise RuntimeError(
