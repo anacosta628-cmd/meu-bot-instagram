@@ -227,35 +227,6 @@ Produto/link:
             "⚠️ Não consegui gerar a legenda com a IA.\n\n"
             "Vou verificar a conexão do Gemini."
         )
-async def botoes_handler(update, context):
-
-    query = update.callback_query
-
-    await query.answer()
-
-    acao = query.data
-
-    if acao == "publicar":
-        try:
-        await query.edit_message_text(
-            "📲 Publicando no Instagram... ⏳"
-        )
-
-        import urllib.request
-        import urllib.parse
-        import json
-
-        token = INSTAGRAM_ACCESS_TOKEN
-
-        # Descobre automaticamente a conta do Instagram
-        dados_me = urllib.parse.urlencode({
-            "fields": "id,username",
-            "access_token": token
-        })
-
-        url_me = (
-            "https://graph.instagram.com/v24.0/me?"
-            + dados_me 
             async def botoes_handler(update, context):
     query = update.callback_query
     await query.answer()
