@@ -234,13 +234,13 @@ Produto/link:
 
     acao = query.data
 
-    if acao == "publicar":
-        try:
-        await
-    query.edit_message_text(
-            "📲 Publicando no
-    Instagram... ⏳"
-            )
+        if acao == "publicar":
+            try:
+                 await
+        query.edit_message_text(
+                "🚀 Publicando no
+        Instagram... ⏳"
+                    )
 
             import urllib.request
             import urllib.parse
