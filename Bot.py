@@ -1,6 +1,6 @@
 
 import os
-import threading
+import asyncio
 import json
 import urllib.request
 import urllib.parse
@@ -44,42 +44,37 @@ client = genai.Client(
 
 
 # =========================
-# SERVIDOR PARA O INSTAGRAM
+# APLICAÇÃO WEB / WEBHOOK
 # =========================
 
-class HealthHandler(BaseHTTPRequestHandler):
+from flask import Flask, request, send_file
 
-    def do_GET(self):
+web = Flask(__name__)
+telegram_app = None
+telegram_loop = None
 
-        if self.path == "/foto.jpg" and os.path.exists("/tmp/foto_file_id.jpg"):
+@web.get("/")
+def health():
+    return "Bot funcionando!", 200
 
-            self.send_response(200)
-            self.send_header("Content-Type", "image/jpeg")
-            self.end_headers()
+@web.get("/foto.jpg")
+def foto_publica():
+    caminho = "/tmp/foto_file_id.jpg"
+    if not os.path.exists(caminho):
+        return "Foto ainda não disponível", 404
+    return send_file(caminho, mimetype="image/jpeg")
 
-            with open("/tmp/foto_file_id.jpg", "rb") as arquivo:
-                self.wfile.write(arquivo.read())
-
-        else:
-
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain")
-            self.end_headers()
-
-            self.wfile.write(b"Bot funcionando!")
-
-    def log_message(self, format, *args):
-        return
-
-
-def iniciar_servidor():
-
-    servidor = HTTPServer(
-        ("0.0.0.0", PORT),
-        HealthHandler
+@web.post("/telegram-webhook")
+def telegram_webhook():
+    if telegram_app is None or telegram_loop is None:
+        return "Bot iniciando", 503
+    update = Update.de_json(request.get_json(force=True), telegram_app.bot)
+    futuro = asyncio.run_coroutine_threadsafe(
+        telegram_app.process_update(update),
+        telegram_loop
     )
-
-    servidor.serve_forever()
+    futuro.result(timeout=30)
+    return "OK", 200
 
 
 # =========================
@@ -591,80 +586,41 @@ async def botoes_handler(
 # INICIAR BOT
 # =========================
 
-def main():
+async def iniciar_telegram():
+    global telegram_app, telegram_loop
 
     if not TOKEN:
-
-        raise RuntimeError(
-            "TELEGRAM_BOT_TOKEN não foi configurado."
-        )
-
-
+        raise RuntimeError("TELEGRAM_BOT_TOKEN não foi configurado.")
     if not GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY não foi configurada.")
 
-        raise RuntimeError(
-            "GEMINI_API_KEY não foi configurada."
-        )
+    telegram_loop = asyncio.get_running_loop()
+    telegram_app = Application.builder().token(TOKEN).build()
+    telegram_app.add_handler(CommandHandler("start", start))
+    telegram_app.add_handler(MessageHandler(filters.PHOTO, receber_conteudo))
+    telegram_app.add_handler(CallbackQueryHandler(botoes_handler))
 
-
-    # Servidor para disponibilizar a imagem
-    # para o Instagram
-
-    thread = threading.Thread(
-
-        target=iniciar_servidor,
-
-        daemon=True
+    await telegram_app.initialize()
+    await telegram_app.start()
+    await telegram_app.bot.set_webhook(
+        url=PUBLIC_URL + "/telegram-webhook",
+        drop_pending_updates=True
     )
+    print("🤖 Bot iniciado em webhook:", PUBLIC_URL + "/telegram-webhook")
 
+    while True:
+        await asyncio.sleep(3600)
+
+
+def iniciar_loop_telegram():
+    asyncio.run(iniciar_telegram())
+
+
+def main():
+    import threading
+    thread = threading.Thread(target=iniciar_loop_telegram, daemon=True)
     thread.start()
-
-
-    # =========================
-    # APLICATIVO TELEGRAM
-    # =========================
-
-    app = (
-        Application
-        .builder()
-        .token(TOKEN)
-        .build()
-    )
-
-
-    app.add_handler(
-        CommandHandler(
-            "start",
-            start
-        )
-    )
-
-
-    # Receber somente fotos por enquanto
-
-    app.add_handler(
-        MessageHandler(
-            filters.PHOTO,
-            receber_conteudo
-        )
-    )
-
-
-    app.add_handler(
-        CallbackQueryHandler(
-            botoes_handler
-        )
-    )
-
-
-    print(
-        "🤖 Bot iniciado!"
-    )
-
-
-    # Remove qualquer webhook antigo antes de iniciar o polling.
-    # Isso evita conflito quando o bot já foi configurado anteriormente como webhook.
-    app.run_polling(drop_pending_updates=True)
+    web.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
 
 
 # =========================
