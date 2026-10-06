@@ -35,6 +35,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 INSTAGRAM_ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
 
 PORT = int(os.getenv("PORT", "10000"))
+PUBLIC_URL = os.getenv("RENDER_EXTERNAL_URL", "https://meu-bot-instagram-7jy8.onrender.com").rstrip("/")
 
 client = genai.Client(
     api_key=GEMINI_API_KEY,
@@ -416,9 +417,7 @@ async def botoes_handler(
             # URL DA FOTO
             # =========================
 
-            foto_url = (
-                "https://meu-bot-instagram-7jy8.onrender.com/foto.jpg"
-            )
+            foto_url = PUBLIC_URL + "/foto.jpg"
 
 
             legenda_instagram = context.user_data.get(
@@ -663,7 +662,9 @@ def main():
     )
 
 
-    app.run_polling()
+    # Remove qualquer webhook antigo antes de iniciar o polling.
+    # Isso evita conflito quando o bot já foi configurado anteriormente como webhook.
+    app.run_polling(drop_pending_updates=True)
 
 
 # =========================
